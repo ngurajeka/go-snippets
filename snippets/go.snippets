@@ -1,0 +1,70 @@
+snippet repostruct Go
+	type nameRepository struct {
+		db *sqlbuilder.Database
+	}
+
+	func NewNameRepository(db *sqlbuilder.Database) package.NameRepository {
+		return &nameRepository{db}
+	}
+
+	func (r *nameRepository) DB() *sqlbuilder.Database {
+		return r.db
+	}
+
+	func (r *nameRepository) Store(v *package.Type) error {
+		now := time.Now().UTC()
+		v.CreatedAt, v.UpdatedAt = now, &now
+		newID, err := (*r.db).Collection("table").Insert(v)
+		if err != nil {
+			id, _ := newID.(int64)
+			v.ID = uint(id)
+		}
+		return err
+	}
+
+	func (r *nameRepository) Count(qs *querystring.Query) uint64 {
+		if total, err := (*r.db).Collection("table").
+			Find(qs.String()).Count(); err != nil {
+			return total
+		}
+		return 0
+	}
+
+	func (r *nameRepository) Find(id uint) (*package.Type, error) {
+		var v package.Type
+		if err := (*r.db).SelectFrom("table").
+			Where(db.Cond{"prefId": id, "prefDeletedTime": nil}).
+			One(&v); err != nil {
+			return nil, err
+		}
+		return &v, nil
+	}
+
+	func (r *nameRepository) FindAll(qs *querystring.Query) ([]*package.Type, error) {
+		var vs []*package.Type
+		err := (*r.db).SelectFrom("table").
+			Where(qs.String()).Limit(qs.Limit).Offset(qs.Offset).All(&vs)
+		if err != nil {
+			return vs, err
+		}
+		if len(vs) == 0 {
+			vs = make([]*package.Type, 0)
+		}
+		return vs, nil
+	}
+
+	func (r *nameRepository) Update(id uint, v *package.Type) error {
+		now := time.Now().UTC()
+		v.UpdatedAt = &now
+		err := (*r.db).Collection("table").
+			Find(db.Cond{"prefId": id, "prefDeletedTime": nil}).
+			Update(*v)
+		return err
+	}
+
+	func (r *nameRepository) Delete(id uint) error {
+		now := time.Now().UTC()
+		_, err := (*r.db).Update("table").Set("prefDeletedTime": &now).
+			Where(db.Cond{"prefId": id, "prefDeletedTime": nil}).Exec()
+		return err
+	}

@@ -1,0 +1,12 @@
+{
+  "name": "go-snippet",
+  "author": "Ady Rahmat MA",
+  "maintainer": "Ady Rahmat MA",
+  "repository": {
+	"type": "git",
+	"url": "git://github.com/ngurajeka/vim-go-snippet.git"
+  },
+  "dependencies": {
+  },
+  "description": "Go Snippet for Vim"
+}
